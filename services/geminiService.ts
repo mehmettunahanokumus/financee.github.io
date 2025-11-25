@@ -1,15 +1,28 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Transaction, TransactionType, Subscription, Currency } from "../types";
 
-// Initialize the client with the API key from the environment
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to safely get the API key (works with both process.env and import.meta.env in Vite)
+const getApiKey = () => {
+  // @ts-ignore
+  return process.env.API_KEY || import.meta.env?.VITE_API_KEY || '';
+};
+
+const apiKey = getApiKey();
+let ai: GoogleGenAI | null = null;
+
+if (apiKey) {
+  ai = new GoogleGenAI({ apiKey });
+}
 
 export const getFinancialAdvice = async (
   transactions: Transaction[], 
   subscriptions: Subscription[],
   currency: Currency
 ): Promise<string> => {
+  if (!ai) {
+    return "API Key is missing. Please configure your Gemini API Key in the application settings or environment variables to use the AI Advisor.";
+  }
+
   try {
     // Prepare the data for the model
     const recentTransactions = transactions
